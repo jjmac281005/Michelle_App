@@ -2,9 +2,13 @@ package edu.uph.m23si2.pertamaapp;
 
 import android.content.Intent;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
 import android.widget.EditText;
+import android.widget.Spinner;
 import android.widget.Toast;
 
 import androidx.activity.EdgeToEdge;
@@ -13,18 +17,31 @@ import androidx.core.graphics.Insets;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 
+import java.util.ArrayList;
+import java.util.List;
+
+import edu.uph.m23si2.pertamaapp.api.ApiResponseKabupaten;
 import edu.uph.m23si2.pertamaapp.model.KRS;
 import edu.uph.m23si2.pertamaapp.model.KRS_detail;
+import edu.uph.m23si2.pertamaapp.model.Kabupaten;
 import edu.uph.m23si2.pertamaapp.model.KelasMatakuliah;
 import edu.uph.m23si2.pertamaapp.model.Mahasiswa;
 import edu.uph.m23si2.pertamaapp.model.Matakuliah;
 import edu.uph.m23si2.pertamaapp.model.Prodi;
+import edu.uph.m23si2.pertamaapp.model.Provinsi;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
 
 public class LoginActivity extends AppCompatActivity {
     Button btnLogin;
     EditText edtNama, edtPassword;
+    Spinner sprProvinsi, sprKabupaten;
+    List<Provinsi> provinsiList = new ArrayList<>();
+    List<Kabupaten> kabupatenList = new ArrayList<>();
+    List<String> namaProvinsi = new ArrayList<>();
+    List<String> namaKabupaten = new ArrayList<>();
+    ArrayAdapter<String> provinsiAdapter;
+    ArrayAdapter<String> kabupatenAdapter;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,6 +71,83 @@ public class LoginActivity extends AppCompatActivity {
             @Override
             public void onClick(View v) {
                 toDashboard();
+            }
+        });
+
+        sprProvinsi = findViewById(R.id.sprProvinsi);
+        provinsiAdapter = new ArrayAdapter<>(this,android.R.layout.simple_spinner_item,namaProvinsi);
+        provinsiAdapter.setDropDownViewResource(android.R.layout.simple_spinner_item);
+        sprProvinsi.setAdapter(provinsiAdapter);
+
+        sprKabupaten = findViewById(R.id.sprKabupaten);
+        kabupatenAdapter = new ArrayAdapter<>(this, android.R.layout.simple_spinner_item, namaKabupaten);
+        kabupatenAdapter.setDropDownViewResource(android.R.layout.simple_spinner_item);
+        sprKabupaten.setAdapter(kabupatenAdapter);
+
+        //init retrofit
+        Retrofit retrofit = new Retrofit.Builder()
+                .baseUrl("https://wilayah.id")
+                .addConverterFactory(GsonConverterFactory.create())
+                .build();
+        ApiService apiService = retrofit.create(ApiService.class);
+
+
+        //panggil API
+        apiService.getProvinsi().enqueue(new Callback<ApiResponse>() {
+            @Override
+            public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
+                if(response.isSuccessful() && response.body()!=null){
+                    provinsiList = response.body().getData();
+                    namaProvinsi.clear();
+                    for(Provinsi p: provinsiList){
+                        if(p.getName()!=null){
+                            Log.d("Provinsi", p.getName());
+                            namaProvinsi.add(p.getName());
+                        }
+                    }
+
+                    provinsiAdapter.notifyDataSetChanged();
+
+                    sprProvinsi.setOnItemSelectedListener(new AdapterView.OnItemSelectedListener() {
+                        @Override
+                        public void onItemSelected(AdapterView<?> parent, View view, int position, long id) {
+                            Provinsi selected = provinsiList.get(position);
+                            Log.d("Provinsi", selected.getCode() + " - " + selected.getName());
+
+                            // panggil kabupaten berdasarkan provinsi yg dipilih
+                            apiService.getKabupaten(selected.getCode()).enqueue(new Callback<ApiResponseKabupaten>() {
+                                @Override
+                                public void onResponse(Call<ApiResponseKabupaten> call, Response<ApiResponseKabupaten> response) {
+                                    if (response.isSuccessful() && response.body() != null) {
+                                        kabupatenList = response.body().getData();
+                                        namaKabupaten.clear();
+                                        for (Kabupaten k : kabupatenList) {
+                                            if (k.getName() != null) {
+                                                namaKabupaten.add(k.getName());
+                                            }
+                                        }
+                                        kabupatenAdapter.notifyDataSetChanged();
+                                    }
+                                }
+
+                                @Override
+                                public void onFailure(Call<ApiResponseKabupaten> call, Throwable t) {
+                                    Toast.makeText(LoginActivity.this, "Gagal : " + t.getMessage(), Toast.LENGTH_LONG).show();
+                                }
+                            });
+                        }
+
+                        @Override
+                        public void onNothingSelected(AdapterView<?> parent) {
+
+                        }
+                    });
+                }
+            }
+
+            @Override
+            public void onFailure(Call<ApiResponse> call, Throwable t) {
+                Toast.makeText(LoginActivity.this,"Gagal :"+t.getMessage(),Toast.LENGTH_LONG);
             }
         });
     }
