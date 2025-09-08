@@ -20,7 +20,9 @@ import androidx.core.view.WindowInsetsCompat;
 import java.util.ArrayList;
 import java.util.List;
 
+import edu.uph.m23si2.pertamaapp.api.ApiResponse;
 import edu.uph.m23si2.pertamaapp.api.ApiResponseKabupaten;
+import edu.uph.m23si2.pertamaapp.api.ApiService;
 import edu.uph.m23si2.pertamaapp.model.KRS;
 import edu.uph.m23si2.pertamaapp.model.KRS_detail;
 import edu.uph.m23si2.pertamaapp.model.Kabupaten;
@@ -31,6 +33,11 @@ import edu.uph.m23si2.pertamaapp.model.Prodi;
 import edu.uph.m23si2.pertamaapp.model.Provinsi;
 import io.realm.Realm;
 import io.realm.RealmConfiguration;
+import retrofit2.Call;
+import retrofit2.Callback;
+import retrofit2.Response;
+import retrofit2.Retrofit;
+import retrofit2.converter.gson.GsonConverterFactory;
 
 public class LoginActivity extends AppCompatActivity {
     Button btnLogin;
@@ -40,7 +47,7 @@ public class LoginActivity extends AppCompatActivity {
     List<Kabupaten> kabupatenList = new ArrayList<>();
     List<String> namaProvinsi = new ArrayList<>();
     List<String> namaKabupaten = new ArrayList<>();
-    ArrayAdapter<String> provinsiAdapter;
+    ArrayAdapter<String> provinsiAdapter; //terhubung dengan adapter, jd list provinsi akan terhubung ke array adapternya
     ArrayAdapter<String> kabupatenAdapter;
 
     @Override
@@ -62,10 +69,12 @@ public class LoginActivity extends AppCompatActivity {
                 .deleteRealmIfMigrationNeeded()
                 .build();
         Realm.setDefaultConfiguration(config);
-        initData();
+
+        //initData();
         btnLogin = findViewById(R.id.btnLogin);
         edtNama = findViewById(R.id.edtNama);
         edtPassword = findViewById(R.id.edtPassword);
+
 
         btnLogin.setOnClickListener(new View.OnClickListener() {
             @Override
@@ -92,7 +101,6 @@ public class LoginActivity extends AppCompatActivity {
         ApiService apiService = retrofit.create(ApiService.class);
 
 
-        //panggil API
         apiService.getProvinsi().enqueue(new Callback<ApiResponse>() {
             @Override
             public void onResponse(Call<ApiResponse> call, Response<ApiResponse> response) {
@@ -150,6 +158,8 @@ public class LoginActivity extends AppCompatActivity {
                 Toast.makeText(LoginActivity.this,"Gagal :"+t.getMessage(),Toast.LENGTH_LONG);
             }
         });
+
+
     }
 
     public void initData() {

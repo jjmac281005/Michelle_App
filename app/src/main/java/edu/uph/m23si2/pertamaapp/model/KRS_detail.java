@@ -10,6 +10,8 @@ public class KRS_detail extends RealmObject {
     private KRS krs; // relasi ke KRS
     private KelasMatakuliah kelasMatakuliah; // relasi ke kelas
 
+    public KRS_detail() {
+    }
     public KRS_detail(int detailID, String status, KRS krs, KelasMatakuliah kelasMatakuliah) {
         this.detailID = detailID;
         this.status = status;
